@@ -19,26 +19,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
-//import java.net.MalformedURLException;
-//import java.net.URL;
 import java.util.NoSuchElementException;
+
 import javax.security.auth.login.LoginException;
-//import javax.swing.filechooser.FileFilter;
 
-//import net.bioclipse.business.BioclipsePlatformManager;
-//import net.bioclipse.core.business.BioclipseException;
 import net.bioclipse.managers.business.IBioclipseManager;
-import org.apache.log4j.Logger;
-
-import de.walware.rj.servi.RServi;
-import de.walware.rj.data.RObject;
-import de.walware.rj.data.RStore;
 import net.bioclipse.r.RServiManager;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
+import net.bioclipse.statistics.model.IMatrixResource;
+
+import org.apache.log4j.Logger;
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+
+import de.walware.rj.data.RObject;
+import de.walware.rj.data.RStore;
+import de.walware.rj.servi.RServi;
 
 public class RBusinessManager implements IBioclipseManager {
 	
@@ -389,6 +387,41 @@ public class RBusinessManager implements IBioclipseManager {
 //			e.printStackTrace();
 //			return e.getMessage();
 //		}
+    }
+
+    public String createMatrix(String varName, IMatrixResource matrixData) {
+    	StringBuffer results = new StringBuffer();
+    	results.append(eval(
+    	    "connection <- " + "textConnection(\"" +
+    	    matrixAsString(matrixData) + "\")"
+    	));
+    	results.append(eval(
+    	    varName + " <- read.table(connection, nrows=" +
+    	    matrixData.getRowCount() + ")"
+    	));
+    	results.append(eval(
+        	"close(connection)"
+    	));
+    	return results.toString();
+    }
+    
+    private String matrixAsString(IMatrixResource matrix) {
+    	StringBuffer buffer = new StringBuffer();
+    	if (matrix.hasColHeader()) {
+    		for (int col=1; col<=matrix.getColumnCount(); col++) {
+    			String result = matrix.getColumnName(col);
+    			buffer.append(result == null ? "" : result);
+    			buffer.append(" ");
+    		}
+    	}
+    	for (int row=1; row<=matrix.getRowCount(); row++) {
+    		for (int col=1; col<=matrix.getColumnCount(); col++) {
+    			String result = matrix.get(row,col);
+    			buffer.append(result == null ? "" : result);
+    			buffer.append(" ");
+    		}
+    	}
+    	return buffer.toString();
     }
 
     private String extractRError(String error) {
